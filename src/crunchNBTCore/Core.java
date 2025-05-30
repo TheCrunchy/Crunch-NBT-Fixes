@@ -34,25 +34,60 @@ public class Core extends JavaPlugin {
 
 		@EventHandler
 		public void onInventoryClick(InventoryClickEvent event) {
-			if (!(event.getWhoClicked() instanceof Player))
-				return;
-			// getLogger().info("Clicked");
-			Player player = (Player) event.getWhoClicked();
-			ItemStack clicked = event.getCurrentItem();
+		    if (!(event.getWhoClicked() instanceof Player))
+		        return;
 
-			if (clicked == null || clicked.getType() == Material.AIR)
-				return;
+		    Player player = (Player) event.getWhoClicked();
+		    UUID uuid = player.getUniqueId();
+		    ItemStack clicked = event.getCurrentItem();
+		    ItemStack cursor = event.getCursor();
 
-			// Check if the item has NBT data using NBT API
-			NBTItem nbtClicked = new NBTItem(clicked);
-			if (nbtClicked.getKeys().isEmpty()) {
-				// No NBT data, don't cache
-				playerItemCache.remove(player.getUniqueId());
-				return;
-			}
+		    // Handle placing actions
+		    switch (event.getAction()) {
+		        case PLACE_ALL:
+		        case PLACE_ONE:
+		        case PLACE_SOME:
+		            // Only try to apply cached item if the player is placing something
+		            ItemStack cached = playerItemCache.get(uuid);
+		            if (cached != null) {
+		 
+		                    int slot = event.getSlot();
+		                    Inventory clickedInv = event.getClickedInventory();
+		             	   ItemStack current = clickedInv.getItem(slot);
+		             	   
+		             	    NBTItem nbtClicked = new NBTItem(current);
+		        		    if (nbtClicked.getKeys().isEmpty()) {
+		        		        if (clickedInv != null && slot >= 0 && slot < clickedInv.getSize()) {
+			                    	Core.plugin.getServer().getScheduler().runTaskLater(Core.plugin, () -> {
+			                    	
+			                    		    if (current != null && current.getType() == cached.getType()) {
+			                    		        ItemStack replaced = cached.clone();
+			                    		        replaced.setAmount(current.getAmount());
+			                    		        clickedInv.setItem(slot, replaced);
+			                    		    }
+			                        }, 1L);
+			                    }
+		        		    }
+		        		    
+		             
+		                
+		            }
+		            return; // Exit here — this is a place action, no need to cache
+		    }
 
-			// Cache the full ItemStack (clone to avoid modifying original)
-			playerItemCache.put(player.getUniqueId(), clicked.clone());
+	
+		    if (clicked == null || clicked.getType() == Material.AIR)
+		        return;
+
+		    NBTItem nbtClicked = new NBTItem(clicked);
+		    if (nbtClicked.getKeys().isEmpty()) {
+		   
+		        playerItemCache.remove(uuid);
+		        return;
+		    }
+
+		    // Cache the full ItemStack (clone to avoid modifying original)
+		    playerItemCache.put(uuid, clicked.clone());
 		}
 
 		@EventHandler
