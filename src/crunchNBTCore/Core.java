@@ -10,10 +10,14 @@ import java.util.logging.Level;
 import java.util.logging.LogManager;
 
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandExecutor;
+import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -47,6 +51,7 @@ public class Core extends JavaPlugin {
 
 	@Override
 	public void onEnable() {
+		this.getCommand("freeze").setExecutor(new FreezeCommand(this));
 		getServer().getPluginManager().registerEvents(new MountEvent(), this);
 		plugin = this;
 		
@@ -74,13 +79,8 @@ public class Core extends JavaPlugin {
                 long elapsed = (System.nanoTime() - lastTick) / 1_000_000;
                 if (elapsed > timeout) {
                     getLogger().severe("Main thread unresponsive for " + elapsed + " ms. Attempting shutdown.");
-                    Bukkit.shutdown();
-
-                    // Failsafe if shutdown doesn't work after 10s
-                    try {
-                        Thread.sleep(10_000);
-                    } catch (InterruptedException ignored) {}
-                    System.exit(1);
+   
+                  Runtime.getRuntime().halt(1);
                 }
             }
         }, "WatchdogPlugin-Monitor").start();
@@ -134,6 +134,34 @@ public class Core extends JavaPlugin {
 //     		    }.runTaskTimer(this, 20L, 100L); // run every second
      		}
 	
+	public class FreezeCommand implements CommandExecutor {
+
+	    private final JavaPlugin plugin;
+
+	    public FreezeCommand(JavaPlugin plugin) {
+	        this.plugin = plugin;
+	    }
+
+	    @Override
+	    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+	        if (!sender.hasPermission("watchdog.freeze")) {
+	            sender.sendMessage(ChatColor.RED + "You don't have permission to use this command.");
+	            return true;
+	        }
+
+	        sender.sendMessage(ChatColor.RED + "Freezing the main thread");
+	        plugin.getLogger().warning("Intentionally freezing the main thread.");
+
+	        try {
+	            // This freezes the main thread (bad practice, but intentional for the watchdog test)
+	            Thread.sleep(500_000);
+	        } catch (InterruptedException ignored) {
+	        }
+
+	        sender.sendMessage(ChatColor.GREEN + "Main thread unfrozen (if still running).");
+	        return true;
+	    }
+	}
 	
 	public class MountEvent implements Listener {
 		

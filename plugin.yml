@@ -2,3 +2,11 @@ name: Crunch-NBT-Fixes
 main: crunchNBTCore.Core
 version: 1.0
 api-version: 1.20
+commands:
+  freeze:
+    description: Intentionally freeze the main thread for testing the watchdog.
+    usage: /freeze
+permissions:
+  watchdog.freeze:
+    description: Allows the user to run the /freeze command.
+    default: op
