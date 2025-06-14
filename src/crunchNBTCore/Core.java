@@ -233,10 +233,10 @@ public class Core extends JavaPlugin {
 				if (localSlot < 0 || localSlot >= inventory.getSize())
 					continue;
 
-				Core.plugin.getServer().getScheduler().runTaskLater(Core.plugin, () -> {
+				Core.plugin.getServer().getScheduler().runTask(Core.plugin, () -> {
 					inventory.setItem(localSlot, replaced);
 		
-				}, 1L);
+				});
 			}
 		}
 
