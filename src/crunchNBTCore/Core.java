@@ -15,15 +15,18 @@ import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
+import org.bukkit.block.Block;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.CreatureSpawnEvent;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
@@ -168,11 +171,34 @@ public class Core extends JavaPlugin {
 		@EventHandler(priority = EventPriority.LOWEST)
 		public void onEntitySpawn(CreatureSpawnEvent event) {
 		    Entity entity = event.getEntity();
-	
-		    if (entity.getType().toString().equals("ALEXSMOBS_LEAFCUTTER_ANT")) {
-		    	event.setCancelled(true);
+		    
+		    if (!entity.getType().toString().equals("ALEXSMOBS_LEAFCUTTER_ANT")) {
+		        return;
+		    }
+
+		    // Always cancel the ant spawn
+		    event.setCancelled(true);
+
+		    Location loc = entity.getLocation();
+		    World world = loc.getWorld();
+		    int radius = 10;
+
+		    // Scan nearby blocks in a 21x21x21 cube
+		    for (int x = -radius; x <= radius; x++) {
+		        for (int y = -radius; y <= radius; y++) {
+		            for (int z = -radius; z <= radius; z++) {
+		                Location checkLoc = loc.clone().add(x, y, z);
+		                Block block = world.getBlockAt(checkLoc);
+		                String blockName = block.getType().name().toLowerCase();
+		                if (blockName.contains("leafcutter")) {
+		                  
+		                    block.setType(Material.AIR); 
+		                }
+		            }
+		        }
 		    }
 		}
+
 		
 		private final Map<UUID, ItemStack> playerItemCache = new HashMap<>();
 
