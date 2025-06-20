@@ -16,6 +16,8 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
+import org.bukkit.block.data.BlockData;
+import org.bukkit.block.data.type.Leaves;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -25,6 +27,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
@@ -167,6 +170,71 @@ public class Core extends JavaPlugin {
 	}
 	
 	public class MountEvent implements Listener {
+		@EventHandler
+		public void onBlockBreak(BlockBreakEvent event) {
+		    Player player = event.getPlayer();
+		    if (player == null) {
+		    	return;
+		    }
+		    Block brokenBlock = event.getBlock();
+		    
+		    // Only continue if a player breaks a leaf block
+		    if (!brokenBlock.getType().name().endsWith("_LEAVES")) {
+		        return;
+		    }
+
+		    // Only continue if the player is holding a hoe
+		    ItemStack itemInHand = player.getInventory().getItemInMainHand();
+		    if (itemInHand == null || !itemInHand.getType().name().endsWith("_HOE")) {
+		        return;
+		    }
+
+		    // Define the search radius
+		    int radius = 16;
+		    Location origin = brokenBlock.getLocation();
+		    World world = origin.getWorld();
+
+		    if (world == null) return;
+
+		    boolean foundLog = false;
+
+		    // Search for any log/wood blocks in the area
+		    outerLoop:
+		    for (int x = -radius; x <= radius; x++) {
+		        for (int y = -radius; y <= radius; y++) {
+		            for (int z = -radius; z <= radius; z++) {
+		                Block nearby = world.getBlockAt(origin.clone().add(x, y, z));
+		                Material type = nearby.getType();
+
+		                if (type.name().endsWith("_LOG") || type.name().endsWith("_WOOD")) {
+		                    foundLog = true;
+		                    break outerLoop;
+		                }
+		            }
+		        }
+		    }
+
+		    if (!foundLog) {
+		        // No logs found — force decay of all leaves in radius
+		        for (int x = -radius; x <= radius; x++) {
+		            for (int y = -radius; y <= radius; y++) {
+		                for (int z = -radius; z <= radius; z++) {
+		                    Block target = world.getBlockAt(origin.clone().add(x, y, z));
+		                    if (target.getType().name().endsWith("_LEAVES")) {
+		                        BlockData data = target.getBlockData();
+		                        if (data instanceof Leaves) {
+		                            Leaves leaves = (Leaves) data;
+		                            leaves.setPersistent(false); // remove persistent flag
+		                            leaves.setDistance(7);        // max distance = decays naturally
+		                            target.setBlockData(leaves);
+		                        }
+		                    }
+		                }
+		            }
+		        }
+		    }
+		}
+
 		
 		@EventHandler(priority = EventPriority.LOWEST)
 		public void onEntitySpawn(CreatureSpawnEvent event) {
