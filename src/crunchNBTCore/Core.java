@@ -57,9 +57,11 @@ public class Core extends JavaPlugin {
 
 	@Override
 	public void onEnable() {
-		this.getCommand("freeze").setExecutor(new FreezeCommand(this));
-		getServer().getPluginManager().registerEvents(new MountEvent(), this);
 		plugin = this;
+		this.getCommand("freeze").setExecutor(new FreezeCommand(this));
+		this.getCommand("entitiesremove").setExecutor(new RemoveEntityCommand(this));
+		getServer().getPluginManager().registerEvents(new MountEvent(), this);
+
 		
 	    for (World world : Bukkit.getWorlds()) {
 	        for (Entity entity : world.getEntities()) {
@@ -169,6 +171,60 @@ public class Core extends JavaPlugin {
 	    }
 	}
 	
+	public class RemoveEntityCommand implements CommandExecutor {
+
+	    private final JavaPlugin plugin;
+
+	    public RemoveEntityCommand(JavaPlugin plugin) {
+	        this.plugin = plugin;
+	    }
+
+	    @Override
+	    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+	        if (!(sender instanceof Player)) {
+	            sender.sendMessage(ChatColor.RED + "Only players can use this command.");
+	            return true;
+	        }
+
+	        Player player = (Player) sender;
+
+	        if (!player.hasPermission("entities.remove")) {
+	            player.sendMessage(ChatColor.RED + "You don't have permission to use this command.");
+	            return true;
+	        }
+
+	        if (args.length < 1) {
+	            player.sendMessage(ChatColor.RED + "Usage: /" + label + " <radius>");
+	            return true;
+	        }
+
+	        int radius;
+	        try {
+	            radius = Integer.parseInt(args[0]);
+	            if (radius < 1 || radius > 100) {
+	                player.sendMessage(ChatColor.RED + "Radius must be between 1 and 100.");
+	                return true;
+	            }
+	        } catch (NumberFormatException e) {
+	            player.sendMessage(ChatColor.RED + "Invalid number: " + args[0]);
+	            return true;
+	        }
+
+	        int removedCount = 0;
+
+	        for (Entity entity : player.getNearbyEntities(radius, radius, radius)) {
+	            if (entity instanceof Player) continue;
+
+	            entity.remove();
+	            removedCount++;
+	        }
+
+	        player.sendMessage(ChatColor.GREEN + "Removed " + removedCount + " entities within " + radius + " blocks.");
+	        return true;
+	    }
+
+	}
+	
 	public class MountEvent implements Listener {
 		@EventHandler
 		public void onBlockBreak(BlockBreakEvent event) {
@@ -190,7 +246,7 @@ public class Core extends JavaPlugin {
 		    }
 
 		    // Define the search radius
-		    int radius = 16;
+		    int radius = 20;
 		    Location origin = brokenBlock.getLocation();
 		    World world = origin.getWorld();
 

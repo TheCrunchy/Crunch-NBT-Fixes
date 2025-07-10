@@ -6,7 +6,13 @@ commands:
   freeze:
     description: Intentionally freeze the main thread for testing the watchdog.
     usage: /freeze
+  entitiesremove:
+    description: Remove some entities
+    usage: /entityremove
 permissions:
   watchdog.freeze:
     description: Allows the user to run the /freeze command.
+    default: op
+  entities.remove:
+    description: Removes entities from the game in specified radius.
     default: op
