@@ -384,6 +384,10 @@ public class Core extends JavaPlugin {
 					continue;
 
 				Core.plugin.getServer().getScheduler().runTask(Core.plugin, () -> {
+					ItemStack inSlot = inventory.getItem(localSlot);
+					if (inSlot == null || inSlot.getType() == Material.AIR) {
+						return;
+					}
 					inventory.setItem(localSlot, replaced);
 		
 				});
